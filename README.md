@@ -59,8 +59,7 @@ python app/run.py
 
 View the application at: http://0.0.0.0:3000/
 
-The Terminal output while running the classifier is attached in this [file](DisasterRespPipeline/models
-/Terminal.txt)
+The Terminal output while running the classifier is attached in this [Terminal](models/Terminal.txt)
 
 ## Dive Into the Web App
 Explore interactive visualizations and use the message classifier to see the model in action. It's not just about technology; it's about making a difference when it matters most.
