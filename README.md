@@ -10,12 +10,13 @@ In a world where every second counts, the Disaster Response Pipeline Project sta
 
 - [Why This Matters](#why-this-matters)
 - [Technology Stack](#technology-stack)
-- [Setup & Installation](#setup--installation)
+- [Setup](#setup)
 - [How It Works](#how-it-works)
 - [Dive Into the Web App](#dive-into-the-web-app)
-- [Contributing to the Cause](#contributing-to-the-cause)
+- [Addressing Dataset Imbalance](#Addressing-Dataset-Imbalance)
 - [Acknowledgements](#acknowledgements)
 - [Gallery](#gallery)
+- [Summary & Call to Action](#summary--call-to-action)
 
 ## Why This Matters
 
@@ -27,23 +28,20 @@ In the aftermath of a disaster, every moment is critical. Emergency teams strugg
 - **Libraries**: NumPy, Pandas, Scikit-Learn for ML; NLTK for NLP; SQLAlchemy for database operations; Flask and Plotly for web app and data visualization.
 - **Database**: SQLite for lightweight and efficient data storage.
 - **Machine Learning**: Custom-built classification models trained on real-world data.
+- **Parallel Computing**: Dask provides advanced parallel computing capabilities, enabling the project to handle larger datasets more efficiently than traditional Pandas workflows. This addition is crucial for processing and analyzing disaster response data at scale, ensuring timely and accurate categorization of messages during critical times.
 
-## Setup & Installation
+## Setup
 
 Ensure you have Python 3.5+ installed. Clone this repository to get started:
 
 ```shell
-git clone https://github.com/matteobonanomi/disaster-response.git
-cd disaster-response
-```
-Install dependencies:
-```shell
-pip install -r requirements.txt
+git clone https://github.com/RaghuVaranKula/DisasterRespPipeline.git
+cd DisasterRespPipeline
 ```
 
 ## How It Works
 
-**ETL Pipeline**: Extract data from source, clean, and store it in a SQLite database.
+**ETL Pipeline**: Extract data from source, clean, and store it in a SQLite database.        
 **ML Pipeline**: Train a model to classify disaster messages into categories.
 **Web App**: Visualize the results and provide an interface for real-time classification.
 
@@ -59,13 +57,37 @@ python models/train_classifier.py data/DisasterResponse.db models/classifier.pkl
 python app/run.py
 ```
 
-View the application at: http://0.0.0.0:3001/
+View the application at: http://0.0.0.0:3000/
 
 ## Dive Into the Web App
 Explore interactive visualizations and use the message classifier to see the model in action. It's not just about technology; it's about making a difference when it matters most.
 
-## Contributing to the Cause
-We welcome contributions! Whether you're fixing bugs, adding features, or improving documentation, your help makes a big difference. Check out our CONTRIBUTING.md for guidelines on how to contribute.
+## Addressing Dataset Imbalance
+
+The dataset used in the Disaster Response Pipeline Project, like many real-world datasets, exhibits significant class imbalance. This means that certain categories, such as 'water', have far fewer examples compared to other categories. Such imbalance poses challenges to training machine learning models effectively, as it can lead to models that are biased towards the majority class, reducing their ability to accurately identify the minority class instances.
+
+### Impact on Model Training
+
+- **Bias Towards Majority Class**: Models might become biased towards classes with more examples, potentially ignoring or misclassifying messages belonging to less represented categories.
+- **Reduced Sensitivity**: The sensitivity or true positive rate of the model could decrease for minority classes, making it less reliable in identifying crucial, yet underrepresented, messages during a disaster.
+
+### Precision vs. Recall Consideration
+
+In the context of disaster response, the trade-off between precision (the proportion of true positive results in all positive predictions) and recall (the proportion of true positive results in all actual positives) becomes crucial. The importance of precision and recall can vary significantly across different categories:
+
+- **High Precision**: For categories where the cost of false positives is high, emphasizing precision is important. For example, wrongly categorizing a non-urgent message as 'urgent' could divert resources unnecessarily.
+- **High Recall**: For critical categories, such as 'water', 'food', and 'medical help', a high recall is vital. Missing out on genuine requests for these necessities (false negatives) could have life-threatening implications. In such cases, it's preferable to err on the side of caution, even if it means a higher rate of false positives.
+
+### Strategies to Mitigate Imbalance Impact
+
+- **Resampling Techniques**: Employing oversampling of minority classes or undersampling of majority classes to balance the dataset.
+- **Weighted Loss Functions**: Adjusting the loss function to penalize misclassifications of the minority class more than the majority class.
+- **Ensemble Methods**: Using ensemble learning techniques that can combine multiple models to improve the overall performance on imbalanced datasets.
+
+### Conclusion
+
+In designing our disaster response model, we carefully consider the trade-offs between precision and recall for each category, prioritizing recall for critical needs to ensure that no urgent message goes unnoticed. Meanwhile, we employ advanced techniques to mitigate the impact of dataset imbalance, striving for a model that is both sensitive and specific across all categories. Our goal is to create a balanced approach that maximizes the model's overall effectiveness in real-world disaster situations, ensuring timely and appropriate responses to all affected individuals.
+
 
 ## Acknowledgements
 A heartfelt thanks to Udacity for providing a platform for learning and innovation, and to Figure Eight for the critical data that powers this project. Together, we're building a better response for tomorrow's disasters.
@@ -95,4 +117,3 @@ The Disaster Response Pipeline Project is more than just a technological solutio
 Your engagement can transform the way we respond to disasters. Join us in this journey towards a smarter, faster, and more effective response system. Together, we can build a resilient framework that not only addresses the immediate challenges but also prepares us for the uncertainties of the future.
 
 Let's make a difference, one message at a time.
-Your engagement can transform the way we respond to disasters. Join us in this journey towards a smarter, faster, and more effective response system.
