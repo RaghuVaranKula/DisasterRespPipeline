@@ -59,7 +59,7 @@ python app/run.py
 
 View the application at: http://0.0.0.0:3000/
 
-The Terminal output while running the classifier is attached in this file(DisasterRespPipeline/models
+The Terminal output while running the classifier is attached in this [file](DisasterRespPipeline/models
 /Terminal.txt)
 
 ## Dive Into the Web App
