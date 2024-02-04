@@ -42,7 +42,7 @@ cd DisasterRespPipeline
 ## How It Works
 
 **ETL Pipeline**: Extract data from source, clean, and store it in a SQLite database.        
-**ML Pipeline**: Train a model to classify disaster messages into categories.
+**ML Pipeline**: Train a model to classify disaster messages into categories.          
 **Web App**: Visualize the results and provide an interface for real-time classification.
 
 ### Running the Application:
