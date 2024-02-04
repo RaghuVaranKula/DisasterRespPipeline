@@ -5,6 +5,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 import sys
+import subprocess
 import re
 import nltk 
 nltk.download(['punkt','wordnet','averaged_perceptron_tagger'])
@@ -22,6 +23,23 @@ from sklearn.multioutput import MultiOutputClassifier
 from sklearn.svm import LinearSVC # SVM model for classification tasks.
 from sklearn.multiclass import OneVsRestClassifier # Strategy for multi-class classification.
 
+#"""
+#Install Dask if not installed previously
+def install_package(package_name):
+    """
+    Installs a Python package using pip within a Python script.
+
+    Parameters:
+    - package_name (str): The name of the package to install.
+
+    Returns:
+    - None
+    """
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+
+install_package("dask")
+import dask
+#"""
 
 def load_data(database_filepath):
     """
@@ -67,15 +85,38 @@ def tokenize(text):
         clean_tokens.append(clean_tok)
     return clean_tokens
 
-
-def build_model():
+# Define a Dask delayed function to wrap the GridSearchCV
+@dask.delayed
+def build_evaluate_save_model(X_train, y_train,X_test,y_test, category_names,model_filepath):
     """
-    Constructs and returns a machine learning model pipeline.
+    Builds, evaluates, and saves a machine learning model using GridSearchCV for hyperparameter tuning.
+
+    This function constructs a machine learning pipeline consisting of a text vectorizer, TF-IDF transformer,
+    and a multi-output classifier wrapped in GridSearchCV to find the best model parameters based on cross-validation.
+    After training and finding the best estimator, the function evaluates the model's performance on a test dataset.
+    Finally, it serializes the best estimator (pipeline) using pickle and saves it to a specified file path.
+
+    Parameters:
+    - X_train (pd.DataFrame): Training feature dataset, expected to be text data for vectorization.
+    - y_train (pd.DataFrame): Training target dataset, compatible with multi-output classification.
+    - X_test (pd.DataFrame): Test feature dataset, used for model evaluation.
+    - y_test (pd.DataFrame): Test target dataset, used for model evaluation.
+    - model_filepath (str): File path where the trained model (best estimator) should be saved as a pickle file.
 
     Returns:
-    - model (Pipeline): A scikit-learn Pipeline object that encapsulates the
-      preprocessing steps and the classifier with GridSearch.
+    - None: This function does not return a value but prints out the best hyperparameters and saves the best model to disk.
 
+    Prints:
+    - classification_report and accuracy_score of the model
+    - Best hyperparameters found by GridSearchCV.
+    - Confirmation message once the model is saved to the specified file path.
+
+    Raises:
+    - ValueError: If an error occurs during the pipeline construction, training, or saving process.
+
+    Note:
+    This function uses Dask's @delayed decorator for potential parallel computation and efficiency improvements. Ensure
+    Dask is properly set up if planning to utilize its parallel computing capabilities.
     """
 
     pipeline = Pipeline([
@@ -87,41 +128,27 @@ def build_model():
                 'tfidf__smooth_idf':[True, False],
                 'clf__estimator__estimator__C': [1, 2, 5]
              }
-    cv = GridSearchCV(pipeline, param_grid=parameters, scoring='precision_samples', cv = 5,n_jobs=-1,verbose=2)
-    return cv
+    cv = GridSearchCV(pipeline, param_grid=parameters, cv = 2,n_jobs=-1,verbose=2)
 
-
-def evaluate_model(model, X_test, Y_test, category_names):
-    """
-    Evaluates and prints the performance of the machine learning model on a test dataset.
-
-    Parameters:
-    - model (Pipeline): The machine learning model to evaluate.
-    - X_test (pandas.DataFrame): The features of the test dataset.
-    - y_test (pandas.DataFrame or pandas.Series): The true labels of the test dataset.
-    """
-
-    Y_pred = model.predict(X_test)
+    print('Training model...')
+    cv.fit(X_train, y_train)
+    
+    print('Evaluating model...')
+    y_pred = cv.predict(X_test)
     print("Accuracy")
-    print((Y_pred == Y_test).mean())
-    for i, col in enumerate(category_names):
-        print('{} category metrics: '.format(col))
-        print(classification_report(Y_test.iloc[:,i], Y_pred[:,i]))
-        print(accuracy_score(Y_test.iloc[:,i], Y_pred[:,i]))
-    print('---------------------------------')
+    print((y_pred == y_test).mean())
 
+    for i in range(len(y_test.columns)):
+        print(classification_report(y_test.iloc[:,i], y_pred[:,i]))
+        print(category_names[i],accuracy_score(y_test.iloc[:,i], y_pred[:,i]))
+        print('---------------------------------')
 
-def save_model(model, model_filepath):
-    """
-    Serializes and saves the machine learning model to a specified file path.
+    print("\nBest Parameters:", cv.best_params_)
 
-    Parameters:
-    - model (Pipeline): The machine learning model to save.
-    - model_filepath (str): The path where the model should be saved, including the filename.
-    """
-
-    pickle.dump(model, open(model_filepath, 'wb')) #dumping pickle file
-
+    print('\nSaving model...\n    MODEL: {}'.format(model_filepath))
+    pickle.dump(cv, open(model_filepath, 'wb')) #dumping pickle file
+    
+    return cv
 
 def main():
     """
@@ -142,19 +169,14 @@ def main():
         database_filepath, model_filepath = sys.argv[1:]
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))
         X, Y, category_names = load_data(database_filepath)
-        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.3)
         
-        print('Building model...')
-        model = build_model()
-        
-        print('Training model...')
-        model.fit(X_train, Y_train)
-        
-        print('Evaluating model...')
-        evaluate_model(model, X_test, Y_test, category_names)
+        print("Building Model...")
+        # Call the delayed function of Dask
+        result = build_evaluate_save_model(X_train, Y_train,X_test,Y_test, category_names,model_filepath)
 
-        print('Saving model...\n    MODEL: {}'.format(model_filepath))
-        save_model(model, model_filepath)
+        # Compute the result with Dask using the threaded scheduler
+        result.compute(scheduler='threads')
 
         print('Trained model saved!')
 
